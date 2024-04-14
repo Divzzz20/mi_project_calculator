@@ -1,0 +1,163 @@
+#ORG 00
+
+; Check if 8-bit input is selected
+LDA 2000
+CPI 01
+JZ 8BIT_INPUT
+; Check if 16-bit input is selected
+CPI 02
+JZ 16BIT_INPUT
+
+8BIT_INPUT:
+; Load the first 8-bit number from memory (2001H) into B
+LDA 2001H
+MOV B, A
+; Load the second 8-bit number from memory (2002H) into C
+LDA 2002H
+MOV C, A
+; Jump to the 8-bit operation
+JMP 8BIT
+
+16BIT_INPUT:
+; Load the address of the first 16-bit number into HL (2001H)
+LXI H, 2001H
+; Swap HL with DE to access the second 16-bit number (2003H)
+XCHG
+LXI H, 2003H
+; Jump to the 16-bit operation
+JMP 16BIT
+
+8BIT:
+; Load the operation flag from memory (2003H)
+LDA 2003
+; Check if the operation is addition
+CPI 01
+JZ ADD
+; Check if the operation is subtraction
+CPI 02
+JZ SUBTRACT
+; Check if the operation is multiplication
+CPI 03
+JZ MULTIPLY
+; Check if the operation is division
+CPI 04
+JZ DIVIDE
+
+; Halt the processor if an invalid operation is specified
+HLT
+
+16BIT:
+; Load the operation flag from memory (2005H)
+LDA 2005
+; Check if the operation is 16-bit addition
+CPI 01
+JZ ADD_16BIT
+; Check if the operation is 16-bit subtraction
+CPI 02
+JZ SUB_16BIT
+
+; Halt the processor if an invalid operation is specified
+HLT
+
+ADD_16BIT:
+; Clear accumulator A
+MVI A, 00H
+; Add the least significant byte (E) to A
+ADD E
+; Move the result to L
+MOV L, A
+; Load accumulator A with the most significant byte (H)
+MVI A, 00H
+; Add the most significant byte (H) to A
+ADC H
+; Move the result to H
+MOV H, A
+; Store the 16-bit result at memory location 2100H
+STA 2100H
+; Halt the processor
+HLT
+
+SUB_16BIT:
+; Clear accumulator A
+MVI A, 00H
+; Subtract the least significant byte (E) from A
+SUB E
+; Move the result to L
+MOV L, A
+; Clear accumulator A
+MVI A, 00H
+; Subtract the most significant byte (H) from A
+SBB H
+; Move the result to H
+MOV H, A
+; Store the 16-bit result at memory location 2100H
+STA 2100H
+; Halt the processor
+HLT
+
+ADD:
+; Move the value from C to A
+MOV A, C
+; Add the value in B to A
+ADD B
+; Store the result at memory location 2100H
+STA 2100H
+; Halt the processor
+HLT
+
+SUBTRACT:
+; Move the value from C to A
+MOV A, C
+; Subtract the value in B from A
+SUB B
+; Store the result at memory location 2100H
+STA 2100H
+; Halt the processor
+HLT
+
+MULTIPLY:
+; Clear accumulator A
+MVI A, 00H
+LOOP:
+; Add the value in B to A
+ADD B
+; Decrement the value in C
+DCR C
+; Repeat the loop until C is not zero
+JNZ LOOP
+; Store the result at memory location 2100H
+STA 2100H
+; Halt the processor
+HLT
+
+DIVIDE:
+; Clear accumulator A
+MVI A, 00H
+; Move the value in B to A
+MOV A, B
+; Move the value in C to B
+MOV B, C
+; Clear accumulator C
+MVI C, 00H
+DIVISION_LOOP:
+; Compare A with B
+CMP B
+; Jump to NO_SUBTRACT if A is less than B
+JC NO_SUBTRACT
+; Subtract B from A
+SUB B
+; Increment C
+INR C
+; Repeat the loop until A is less than B
+JMP DIVISION_LOOP
+NO_SUBTRACT:
+; Store the quotient at memory location 2100H
+STA 2100H
+; Move the value in C to A
+MOV A, C
+; Store the remainder at memory location 2101H
+STA 2101H
+; Halt the processor
+HLT
+
+; End of the program
